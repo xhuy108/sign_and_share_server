@@ -16,6 +16,7 @@ import * as bcrypt from 'bcrypt';
 import { EnvConstants } from 'src/common/constants/env/env.constants';
 import { Tokens } from 'src/common/types';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { CheckEmailDto } from './dto/check-email.dto';
 
 @Injectable()
 export class AuthenticationService {
@@ -50,9 +51,9 @@ export class AuthenticationService {
     return bcrypt.hash(email + verificationSecret, 10);
   }
 
-  async generateAccessToken(email: string) {
+  async generateAccessToken(id: string) {
     return this.jwtService.signAsync(
-      { email },
+      { id },
       {
         expiresIn: this.configService.get<string>(EnvConstants.accessTokenLife),
         secret: this.configService.get<string>(EnvConstants.accessTokenSecret),
@@ -60,9 +61,9 @@ export class AuthenticationService {
     );
   }
 
-  async generateRefreshToken(email: string) {
+  async generateRefreshToken(id: string) {
     return this.jwtService.signAsync(
-      { email },
+      { id },
       {
         expiresIn: this.configService.get<string>(
           EnvConstants.refreshTokenLife,
@@ -70,6 +71,19 @@ export class AuthenticationService {
         secret: this.configService.get<string>(EnvConstants.refreshTokenSecret),
       },
     );
+  }
+
+  async refreshToken(refreshToken: string): Promise<Tokens> {
+    const decoded = this.jwtService.verify(refreshToken, {
+      secret: this.configService.get<string>(EnvConstants.refreshTokenSecret),
+    });
+
+    const accessToken = await this.generateAccessToken(decoded.email);
+
+    return {
+      accessToken,
+      refreshToken,
+    };
   }
 
   private async findUserByEmail(email: string) {
@@ -118,8 +132,8 @@ export class AuthenticationService {
       );
     }
     const tokens = await Promise.all([
-      this.generateAccessToken(signInDto.email),
-      this.generateRefreshToken(signInDto.email),
+      this.generateAccessToken(user.id),
+      this.generateRefreshToken(user.id),
     ]);
 
     return {
@@ -156,5 +170,10 @@ export class AuthenticationService {
         verificationAt: new Date(),
       },
     );
+  }
+
+  async checkEmailExists(payload: CheckEmailDto) {
+    const user = await this.findUserByEmail(payload.email);
+    return user !== null;
   }
 }

@@ -12,6 +12,6 @@ export const GetCurrentUserId = createParamDecorator(
     if (!user) {
       throw new UnauthorizedException();
     }
-    return user.userId;
+    return user.id;
   },
 );

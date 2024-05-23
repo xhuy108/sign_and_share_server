@@ -5,6 +5,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from 'src/common/schema/user.schema';
 import { Blog } from './entities/blog.entity';
+import { BlogQuery } from './dto/blog-query.dto';
+import Paging from 'src/common/types/paging.type';
 
 @Injectable()
 export class BlogService {
@@ -17,8 +19,25 @@ export class BlogService {
     return this.blogModel.create(createBlogDto);
   }
 
-  findAll() {
-    return this.blogModel.find().populate('user').exec();
+  async findAll(blogQuery: BlogQuery): Promise<Paging<Blog>> {
+    const page = blogQuery.page || 1;
+    const limit = blogQuery.limit || 20;
+    const result = await Promise.all([
+      this.blogModel
+        .find()
+        .populate('user')
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .exec(),
+      this.blogModel.countDocuments().exec(),
+    ]);
+
+    return {
+      page: page,
+      limit: limit,
+      totalPages: Math.ceil(result[1] / limit),
+      items: result[0],
+    };
   }
 
   async findOne(id: string) {

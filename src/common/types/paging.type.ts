@@ -1,7 +1,7 @@
 type Paging<T> = {
   items: T[];
   page: number;
-  take: number;
+  limit: number;
   totalPages: number;
 };
 

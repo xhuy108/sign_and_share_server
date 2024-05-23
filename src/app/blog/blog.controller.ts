@@ -6,12 +6,14 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { BlogService } from './blog.service';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
 import { GetCurrentUserId, Public } from 'src/common/decorators';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { BlogQuery } from './dto/blog-query.dto';
 
 @Controller('blog')
 @ApiTags('Blog')
@@ -32,8 +34,10 @@ export class BlogController {
 
   @Get()
   @Public()
-  findAll() {
-    return this.blogService.findAll();
+  async findAll(@Query() query: BlogQuery) {
+    // return this.blogService.findAll(query);
+    const result = await this.blogService.findAll(query);
+    return result;
   }
 
   @Get(':id')
